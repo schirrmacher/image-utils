@@ -15,6 +15,7 @@ def process_image(
     scale_max: float,
     output_width: int,
     output_height: int,
+    max_retries: int = 10,
 ) -> None:
     input_path = Path(input_path)
     output_dir = Path(output_dir)
@@ -32,12 +33,20 @@ def process_image(
                 return
 
             valid_scale = False
-            while not valid_scale:
+            retries = 0
+            while not valid_scale and retries < max_retries:
                 scale_factor = random.uniform(scale_min, scale_max)
                 scaled_width = int(img.width * scale_factor)
                 scaled_height = int(img.height * scale_factor)
                 if scaled_width >= output_width and scaled_height >= output_height:
                     valid_scale = True
+                retries += 1
+
+            if not valid_scale:
+                print(
+                    f"Failed to find a valid scale factor for {input_path} after {max_retries} attempts."
+                )
+                return
 
             img = img.resize((scaled_width, scaled_height), Image.LANCZOS)
 
@@ -83,6 +92,7 @@ def process_image(
                     scale_max,
                     output_width,
                     output_height,
+                    max_retries,
                 )
     else:
         print(
@@ -122,6 +132,12 @@ def main():
         default=512,
         help="Height of the output image (default: 512).",
     )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=100,
+        help="Maximum number of retries to find a valid scale factor (default: 10).",
+    )
     args = parser.parse_args()
 
     process_image(
@@ -131,6 +147,7 @@ def main():
         args.scale_max,
         args.output_width,
         args.output_height,
+        args.max_retries,
     )
 
 
