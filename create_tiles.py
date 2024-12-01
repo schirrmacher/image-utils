@@ -66,7 +66,7 @@ def process_image(
                         timestamp = int(time())
                         output_filename = f"{input_path.stem}_{timestamp}_{tile_count}{input_path.suffix}"
                         output_path = output_dir / output_filename
-                        cropped_img.save(output_path)
+                        cropped_img.save(output_path, format="PNG")
                         tile_count += 1
                         print(f"Processed and saved: {output_path}")
             else:
