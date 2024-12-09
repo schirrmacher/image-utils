@@ -49,6 +49,8 @@ def process_image(
     blur_type: str,
     noise: bool,
     noise_intensity: float,
+    save_as_jpeg: bool = False,
+    jpeg_quality_range: tuple[int, int] = (75, 95),
 ) -> None:
     input_path = Path(input_path)
     output_dir = Path(output_dir)
@@ -64,25 +66,48 @@ def process_image(
         print(f"Processing file: {input_path}")
         with Image.open(input_path) as img:
             # Apply scaling
+            selected_scaling_algo = (
+                scaling_algo
+                if scaling_algo
+                else random.choice(list(SCALING_ALGORITHMS.keys()))
+            )
             scaled_width = int(img.width * scale)
             scaled_height = int(img.height * scale)
             img = img.resize(
                 (scaled_width, scaled_height),
-                SCALING_ALGORITHMS[scaling_algo],
+                SCALING_ALGORITHMS[selected_scaling_algo],
             )
+            print(f"Applied scaling using {selected_scaling_algo} algorithm.")
 
             # Optionally apply blur
-            if blur and blur_type in BLUR_ALGORITHMS:
-                img = apply_random_blur(img, blur_type)
+            if blur:
+                selected_blur_type = (
+                    blur_type
+                    if blur_type
+                    else random.choice(list(BLUR_ALGORITHMS.keys()))
+                )
+                img = apply_random_blur(img, selected_blur_type)
+                print(f"Applied blur using {selected_blur_type} algorithm.")
 
             # Optionally add noise
             if noise:
                 img = add_random_noise(img, noise_intensity)
 
-            # Save the processed image as PNG
-            output_path = output_dir / f"{input_path.stem}.png"
-            img.save(output_path, format="PNG")
-            print(f"Saved processed image to: {output_path}")
+            # Save the processed image
+            if save_as_jpeg:
+                # Convert to RGB mode if needed
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+                quality = random.randint(*jpeg_quality_range)
+                output_path = output_dir / f"{input_path.stem}.jpg"
+                img.save(output_path, format="JPEG", quality=quality)
+                print(
+                    f"Saved processed image as JPEG with quality {quality}: {output_path}"
+                )
+            else:
+                output_path = output_dir / f"{input_path.stem}.png"
+                img.save(output_path, format="PNG")
+                print(f"Saved processed image to: {output_path}")
 
     elif input_path.is_dir():
         for image_path in input_path.rglob("*"):
@@ -96,6 +121,8 @@ def process_image(
                     blur_type,
                     noise,
                     noise_intensity,
+                    save_as_jpeg,
+                    jpeg_quality_range,
                 )
     else:
         print(
@@ -105,7 +132,7 @@ def process_image(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Process images with scaling, blur, and noise."
+        description="Process images with scaling, blur, noise, and format options."
     )
     parser.add_argument(
         "input_path", type=str, help="Path to an image file or a directory."
@@ -123,21 +150,18 @@ def main():
         "--scaling-algo",
         type=str,
         choices=SCALING_ALGORITHMS.keys(),
-        default="lanczos",
-        help="Algorithm to use for scaling (default: lanczos).",
+        help="Algorithm to use for scaling. If not specified, one will be chosen randomly.",
     )
     parser.add_argument(
         "--blur",
-        type=bool,
-        default=True,
+        action="store_true",
         help="Apply random blur to the image (default: True).",
     )
     parser.add_argument(
         "--blur-type",
         type=str,
         choices=BLUR_ALGORITHMS.keys(),
-        default="gaussian",
-        help="Type of blur to apply (default: gaussian).",
+        help="Type of blur to apply. If not specified, one will be chosen randomly.",
     )
     parser.add_argument(
         "--noise",
@@ -150,6 +174,19 @@ def main():
         default=10.0,
         help="Intensity of random noise to add (default: 10.0).",
     )
+    parser.add_argument(
+        "--save-as-jpeg",
+        action="store_true",
+        help="Save the processed image as JPEG instead of PNG.",
+    )
+    parser.add_argument(
+        "--jpeg-quality-range",
+        type=int,
+        nargs=2,
+        default=[75, 95],
+        metavar=("MIN", "MAX"),
+        help="Range of JPEG quality values (default: 75 95).",
+    )
     args = parser.parse_args()
 
     process_image(
@@ -161,6 +198,8 @@ def main():
         args.blur_type,
         args.noise,
         args.noise_intensity,
+        args.save_as_jpeg,
+        tuple(args.jpeg_quality_range),
     )
 
 
