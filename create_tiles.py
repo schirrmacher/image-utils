@@ -30,6 +30,7 @@ def process_image(
     if input_path.is_file() and input_path.suffix.lower() in image_extensions:
         with Image.open(input_path) as img:
             if img.width < output_width or img.height < output_height:
+                print(f"Image {input_path.name} is too small for processing. Skipping.")
                 return
 
             valid_scale = False
@@ -64,7 +65,9 @@ def process_image(
                             (left, top, left + output_width, top + output_height)
                         )
                         timestamp = int(time())
-                        output_filename = f"{input_path.stem}_{timestamp}_{tile_count}{input_path.suffix}"
+                        output_filename = (
+                            f"{input_path.stem}_{timestamp}_{tile_count}.png"
+                        )
                         output_path = output_dir / output_filename
                         cropped_img.save(output_path, format="PNG")
                         tile_count += 1
@@ -77,9 +80,9 @@ def process_image(
                     (left, top, left + output_width, top + output_height)
                 )
                 timestamp = int(time())
-                output_filename = f"{input_path.stem}_{timestamp}{input_path.suffix}"
+                output_filename = f"{input_path.stem}_{timestamp}.png"
                 output_path = output_dir / output_filename
-                cropped_img.save(output_path)
+                cropped_img.save(output_path, format="PNG")
                 print(f"Processed and saved: {output_path}")
 
     elif input_path.is_dir():
@@ -135,7 +138,7 @@ def main():
     parser.add_argument(
         "--max-retries",
         type=int,
-        default=100,
+        default=10,
         help="Maximum number of retries to find a valid scale factor (default: 10).",
     )
     args = parser.parse_args()
